@@ -5,7 +5,8 @@ import { collection, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc } fro
 import { 
   Bot, LogOut, CheckCircle2, Clock, Mail, 
   Trash2, ExternalLink, Filter, Smartphone, 
-  Globe, Code, Database 
+  Globe, Code, Database, ChevronDown, User, Phone,
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,6 +15,7 @@ export default function Admin() {
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'contacted'>('all');
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -32,6 +34,13 @@ export default function Admin() {
 
     return unsubscribe;
   }, [isAdmin]);
+
+  const toggleExpand = (id: string) => {
+    const next = new Set(expandedOrders);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setExpandedOrders(next);
+  };
 
   const updateStatus = async (orderId: string, newStatus: string) => {
     try {
@@ -140,77 +149,132 @@ export default function Admin() {
         ) : (
           <div className="grid grid-cols-1 gap-6">
             <AnimatePresence>
-              {filteredOrders.map((order) => (
-                <motion.div
-                  key={order.id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="glass rounded-3xl p-8 border border-white/5 hover:border-brand-primary/20 transition-all flex flex-col md:flex-row gap-8"
-                >
-                  <div className="flex flex-col justify-between md:w-1/4 pb-6 md:pb-0 md:border-r border-white/5">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        {order.status === 'pending' ? <Clock className="w-4 h-4 text-amber-500" /> : <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
-                        <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded-full ${
-                          order.status === 'pending' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'
-                        }`}>
-                          {order.status}
-                        </span>
+              {filteredOrders.map((order) => {
+                const isExpanded = expandedOrders.has(order.id!);
+                return (
+                  <motion.div
+                    key={order.id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="glass rounded-[32px] overflow-hidden border border-white/5 hover:border-brand-primary/20 transition-all"
+                  >
+                    <div className="p-8 flex flex-col md:flex-row gap-8">
+                      <div className="flex flex-col justify-between md:w-1/4 pb-6 md:pb-0 md:border-r border-white/5">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            {order.status === 'pending' ? <Clock className="w-4 h-4 text-amber-500" /> : <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                            <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded-full ${
+                              order.status === 'pending' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'
+                            }`}>
+                              {order.status}
+                            </span>
+                          </div>
+                          <h3 className="text-xl font-bold leading-tight mb-2 flex items-center gap-2">
+                            <User className="w-4 h-4 text-slate-500" />
+                            {order.clientName}
+                          </h3>
+                          <div className="flex items-center gap-2 text-slate-500 text-[10px] uppercase tracking-wider mb-4">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(order.createdAt?.seconds * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <a href={`mailto:${order.clientEmail}`} className="p-2 glass rounded-lg hover:bg-brand-primary/20 text-brand-primary transition-colors" title="Send Email">
+                            <Mail className="w-4 h-4" />
+                          </a>
+                          {order.clientPhone && (
+                            <a href={`tel:${order.clientPhone}`} className="p-2 glass rounded-lg hover:bg-brand-secondary/20 text-brand-secondary transition-colors" title="Call Client">
+                              <Phone className="w-4 h-4" />
+                            </a>
+                          )}
+                          <button 
+                            onClick={() => deleteOrder(order.id!)}
+                            className="p-2 glass rounded-lg hover:bg-rose-500/20 text-rose-500 transition-colors"
+                            title="Delete Inquiry"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                      <h3 className="text-2xl font-bold leading-tight mb-2">{order.clientName}</h3>
-                      <p className="text-slate-500 text-xs mb-4">{new Date(order.createdAt?.seconds * 1000).toLocaleString()}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <a href={`mailto:${order.clientEmail}`} className="p-2 glass rounded-lg hover:bg-brand-primary/20 text-brand-primary transition-colors">
-                        <Mail className="w-4 h-4" />
-                      </a>
-                      <button 
-                        onClick={() => deleteOrder(order.id!)}
-                        className="p-2 glass rounded-lg hover:bg-rose-500/20 text-rose-500 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
 
-                  <div className="flex-1 space-y-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-brand-secondary" />
-                      <span className="text-xs font-black uppercase text-brand-secondary tracking-widest">{order.serviceType}</span>
-                    </div>
-                    <div className="bg-white/5 p-6 rounded-2xl italic text-slate-300 leading-relaxed text-sm">
-                      "{order.message}"
-                    </div>
-                  </div>
+                      <div className="flex-1 space-y-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-brand-secondary" />
+                            <span className="text-xs font-black uppercase text-brand-secondary tracking-widest">{order.serviceType}</span>
+                          </div>
+                          <button 
+                            onClick={() => toggleExpand(order.id!)}
+                            className="text-xs font-bold text-brand-primary hover:underline flex items-center gap-1"
+                          >
+                            {isExpanded ? 'Hide Details' : 'View Details'}
+                            <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+                        </div>
+                        
+                        <div className="bg-white/5 p-6 rounded-2xl border border-white/5 italic text-slate-300 leading-relaxed text-sm line-clamp-2">
+                          "{order.message}"
+                        </div>
 
-                  <div className="md:w-1/5 flex flex-col gap-3 justify-center">
-                    {order.status === 'pending' && (
-                      <button 
-                        onClick={() => updateStatus(order.id!, 'contacted')}
-                        className="w-full py-4 glass text-emerald-500 border-emerald-500/20 font-bold rounded-2xl hover:bg-emerald-500 hover:text-white transition-all text-sm uppercase tracking-widest"
-                      >
-                        Mark Contacted
-                      </button>
-                    )}
-                    {order.status === 'contacted' && (
-                      <button 
-                         onClick={() => updateStatus(order.id!, 'completed')}
-                         className="w-full py-4 glass text-brand-primary border-brand-primary/20 font-bold rounded-2xl hover:bg-brand-primary hover:text-brand-dark transition-all text-sm uppercase tracking-widest"
-                      >
-                        Mark Completed
-                      </button>
-                    )}
-                    <button 
-                       onClick={() => window.open(`mailto:${order.clientEmail}?subject=Regarding your ${order.serviceType} inquiry`)}
-                       className="w-full py-4 bg-brand-primary text-brand-dark font-black rounded-2xl hover:scale-105 transition-transform text-sm uppercase tracking-widest flex items-center justify-center gap-2"
-                    >
-                      Draft Email <ExternalLink className="w-4 h-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="pt-4 border-t border-white/5 mt-4 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="glass p-4 rounded-xl">
+                                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Contact Email</p>
+                                    <p className="text-sm font-bold text-brand-primary">{order.clientEmail}</p>
+                                  </div>
+                                  <div className="glass p-4 rounded-xl">
+                                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Phone Number</p>
+                                    <p className="text-sm font-bold text-white">{order.clientPhone || 'Not provided'}</p>
+                                  </div>
+                                </div>
+                                <div className="glass p-6 rounded-xl">
+                                  <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Full Message Payload</p>
+                                  <p className="text-sm text-slate-200 whitespace-pre-wrap">{order.message}</p>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+
+                      <div className="md:w-1/5 flex flex-col gap-3 justify-center">
+                        {order.status === 'pending' && (
+                          <button 
+                            onClick={() => updateStatus(order.id!, 'contacted')}
+                            className="w-full py-4 glass text-emerald-500 border-emerald-500/20 font-bold rounded-2xl hover:bg-emerald-500 hover:text-white transition-all text-sm uppercase tracking-widest"
+                          >
+                            Mark Contacted
+                          </button>
+                        )}
+                        {order.status === 'contacted' && (
+                          <button 
+                             onClick={() => updateStatus(order.id!, 'completed')}
+                             className="w-full py-4 glass text-brand-primary border-brand-primary/20 font-bold rounded-2xl hover:bg-brand-primary hover:text-brand-dark transition-all text-sm uppercase tracking-widest"
+                          >
+                            Mark Completed
+                          </button>
+                        )}
+                        <button 
+                           onClick={() => window.open(`mailto:${order.clientEmail}?subject=Regarding your ${order.serviceType} inquiry`)}
+                           className="w-full py-4 bg-brand-primary text-brand-dark font-black rounded-2xl hover:scale-105 transition-transform text-sm uppercase tracking-widest flex items-center justify-center gap-2"
+                        >
+                          Draft Email <ExternalLink className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
             {filteredOrders.length === 0 && (
               <div className="text-center py-20 glass rounded-[40px] border-dashed border-white/10">
@@ -223,3 +287,4 @@ export default function Admin() {
     </div>
   );
 }
+

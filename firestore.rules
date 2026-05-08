@@ -18,7 +18,7 @@ service cloud.firestore {
     function isAdmin() {
       // Bootstrapped admin check
       return isSignedIn() && 
-             (request.auth.token.email == "usamavszoombies@gmail.com" && request.auth.token.email_verified == true);
+             (request.auth.token.email == "usamahaseen97@gmail.com" && request.auth.token.email_verified == true);
     }
 
     function isValidId(id) {
