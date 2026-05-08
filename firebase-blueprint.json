@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "Order": {
+      "title": "Order",
+      "description": "An order for a service from a potential client.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientName": { "type": "string" },
+        "clientEmail": { "type": "string", "format": "email" },
+        "clientPhone": { "type": "string" },
+        "serviceType": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "contacted", "completed", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "budget": { "type": "number" }
+      },
+      "required": ["clientName", "clientEmail", "serviceType", "message", "status", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Private profile information for the admin (Usama).",
+      "type": "object",
+      "properties": {
+        "isAdmin": { "type": "boolean" },
+        "email": { "type": "string", "format": "email" }
+      },
+      "required": ["isAdmin", "email"]
+    }
+  },
+  "firestore": {
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Collection of service orders."
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles and permissions."
+    }
+  }
+}

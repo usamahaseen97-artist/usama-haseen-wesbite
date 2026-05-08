@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      // Bootstrapped admin check
+      return isSignedIn() && 
+             (request.auth.token.email == "usamavszoombies@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Order Validation ---
+    function isValidOrder(data) {
+      let requiredFields = ['clientName', 'clientEmail', 'serviceType', 'message', 'status', 'createdAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().size() >= 6 && data.keys().size() <= 8 && // Allowing optional phone and budget
+             data.clientName is string && data.clientName.size() <= 200 &&
+             data.clientEmail is string && data.clientEmail.size() <= 200 &&
+             data.serviceType is string && data.serviceType.size() <= 100 &&
+             data.message is string && data.message.size() <= 5000 &&
+             data.status in ['pending', 'contacted', 'completed', 'cancelled'] &&
+             data.createdAt == request.time &&
+             (!('clientPhone' in data) || (data.clientPhone is string && data.clientPhone.size() <= 50)) &&
+             (!('budget' in data) || (data.budget is number));
+    }
+
+    // --- Collections ---
+
+    match /orders/{orderId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      
+      allow create: if isValidId(orderId) && 
+                      isValidOrder(incoming()) && 
+                      incoming().status == 'pending';
+      
+      allow update: if isAdmin() && 
+                      isValidOrder(incoming()) &&
+                      (
+                        // Admin can change status or add budget
+                        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'budget', 'message'])
+                      );
+      
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Admins collection (optional but recommended for more admins later)
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Only manageable via console
+    }
+  }
+}
