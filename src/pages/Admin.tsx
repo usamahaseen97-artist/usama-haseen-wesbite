@@ -6,9 +6,10 @@ import {
   Bot, LogOut, CheckCircle2, Clock, Mail, 
   Trash2, ExternalLink, Filter, Smartphone, 
   Globe, Code, Database, ChevronDown, User, Phone,
-  Calendar
+  Calendar, Languages, MapPin, CreditCard, Sparkles, AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { translateText } from '../services/translationService';
 
 export default function Admin() {
   const { user, login, logout, isAdmin, loading: authLoading } = useAuth();
@@ -16,6 +17,9 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'contacted'>('all');
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const [translating, setTranslating] = useState<string | null>(null);
+  const [translatedMessages, setTranslatedMessages] = useState<Record<string, string>>({});
+  const [targetLang, setTargetLang] = useState('English');
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -58,6 +62,18 @@ export default function Admin() {
       await deleteDoc(doc(db, 'orders', orderId));
     } catch (error) {
       handleFirestoreError(error, 'delete' as any, `orders/${orderId}`);
+    }
+  };
+
+  const handleTranslate = async (id: string, text: string) => {
+    setTranslating(id);
+    try {
+      const translated = await translateText(text, targetLang);
+      setTranslatedMessages(prev => ({ ...prev, [id]: translated }));
+    } catch (error) {
+      alert("Translation failed. Make sure Gemini API Key is set.");
+    } finally {
+      setTranslating(null);
     }
   };
 
@@ -173,11 +189,23 @@ export default function Admin() {
                           </div>
                           <h3 className="text-xl font-bold leading-tight mb-2 flex items-center gap-2">
                             <User className="w-4 h-4 text-slate-500" />
-                            {order.clientName}
+                            {order.firstName} {order.lastName}
                           </h3>
-                          <div className="flex items-center gap-2 text-slate-500 text-[10px] uppercase tracking-wider mb-4">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(order.createdAt?.seconds * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                          <div className="flex flex-col gap-1 mb-4">
+                            <div className="flex items-center gap-2 text-slate-500 text-[10px] uppercase tracking-wider">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(order.createdAt?.seconds * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-500 text-[10px] uppercase tracking-wider">
+                              <MapPin className="w-3 h-3" />
+                              {order.city && `${order.city}, `}{order.country}
+                            </div>
+                            {order.preferredLanguage && (
+                              <div className="flex items-center gap-2 text-brand-primary text-[10px] uppercase tracking-wider font-bold">
+                                <Languages className="w-3 h-3" />
+                                {order.preferredLanguage}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -214,8 +242,22 @@ export default function Admin() {
                           </button>
                         </div>
                         
-                        <div className="bg-white/5 p-6 rounded-2xl border border-white/5 italic text-slate-300 leading-relaxed text-sm line-clamp-2">
+                        <div className="bg-white/5 p-6 rounded-2xl border border-white/5 italic text-slate-300 leading-relaxed text-sm relative group">
                           "{order.message}"
+                          {translatedMessages[order.id!] && (
+                            <div className="mt-4 pt-4 border-t border-white/10 text-emerald-400 not-italic">
+                              <span className="text-[10px] font-black uppercase text-emerald-500/50 block mb-1">AI Translation ({targetLang}):</span>
+                              {translatedMessages[order.id!]}
+                            </div>
+                          )}
+                          <button 
+                            disabled={translating === order.id}
+                            onClick={() => handleTranslate(order.id!, order.message)}
+                            className="absolute bottom-2 right-2 p-2 glass rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-brand-primary hover:bg-brand-primary/10 flex items-center gap-2 scale-75 origin-bottom-right"
+                          >
+                            {translating === order.id ? <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                            <span className="text-[10px] font-bold">AI TRANSLATE</span>
+                          </button>
                         </div>
 
                         <AnimatePresence>
@@ -227,7 +269,7 @@ export default function Admin() {
                               className="overflow-hidden"
                             >
                               <div className="pt-4 border-t border-white/5 mt-4 space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                   <div className="glass p-4 rounded-xl">
                                     <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Contact Email</p>
                                     <p className="text-sm font-bold text-brand-primary">{order.clientEmail}</p>
@@ -236,9 +278,28 @@ export default function Admin() {
                                     <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Phone Number</p>
                                     <p className="text-sm font-bold text-white">{order.clientPhone || 'Not provided'}</p>
                                   </div>
+                                  <div className="glass p-4 rounded-xl flex items-center justify-between">
+                                    <div>
+                                      <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Payment Method</p>
+                                      <p className="text-sm font-bold text-brand-secondary uppercase">{order.paymentMethod}</p>
+                                    </div>
+                                    <CreditCard className="w-5 h-5 text-brand-secondary opacity-50" />
+                                  </div>
                                 </div>
                                 <div className="glass p-6 rounded-xl">
-                                  <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Full Message Payload</p>
+                                  <div className="flex justify-between items-center mb-2">
+                                    <p className="text-[10px] text-slate-500 uppercase tracking-widest">Full Message Payload</p>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] text-slate-500">Translate to:</span>
+                                      <select 
+                                        value={targetLang}
+                                        onChange={(e) => setTargetLang(e.target.value)}
+                                        className="bg-white/5 border border-white/10 rounded-md px-2 py-1 text-[10px] outline-none"
+                                      >
+                                        {['English', 'Urdu', 'Hindi', 'Arabic', 'French', 'Portuguese', 'Turkish'].map(l => <option key={l} value={l} className="bg-slate-900">{l}</option>)}
+                                      </select>
+                                    </div>
+                                  </div>
                                   <p className="text-sm text-slate-200 whitespace-pre-wrap">{order.message}</p>
                                 </div>
                               </div>

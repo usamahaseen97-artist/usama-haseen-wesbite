@@ -35,16 +35,21 @@ service cloud.firestore {
 
     // --- Order Validation ---
     function isValidOrder(data) {
-      let requiredFields = ['clientName', 'clientEmail', 'serviceType', 'message', 'status', 'createdAt'];
+      let requiredFields = ['firstName', 'lastName', 'clientEmail', 'serviceType', 'message', 'status', 'createdAt', 'country', 'paymentMethod'];
       return data.keys().hasAll(requiredFields) &&
-             data.keys().size() >= 6 && data.keys().size() <= 8 && // Allowing optional phone and budget
-             data.clientName is string && data.clientName.size() <= 200 &&
+             data.keys().size() >= 9 && data.keys().size() <= 13 && 
+             data.firstName is string && data.firstName.size() <= 100 &&
+             data.lastName is string && data.lastName.size() <= 100 &&
              data.clientEmail is string && data.clientEmail.size() <= 200 &&
+             data.country is string && data.country.size() <= 100 &&
+             data.paymentMethod is string && data.paymentMethod.size() <= 50 &&
              data.serviceType is string && data.serviceType.size() <= 100 &&
              data.message is string && data.message.size() <= 5000 &&
              data.status in ['pending', 'contacted', 'completed', 'cancelled'] &&
              data.createdAt == request.time &&
+             (!('city' in data) || (data.city is string && data.city.size() <= 100)) &&
              (!('clientPhone' in data) || (data.clientPhone is string && data.clientPhone.size() <= 50)) &&
+             (!('preferredLanguage' in data) || (data.preferredLanguage is string)) &&
              (!('budget' in data) || (data.budget is number));
     }
 

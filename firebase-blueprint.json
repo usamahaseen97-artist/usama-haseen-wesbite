@@ -6,16 +6,21 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "clientName": { "type": "string" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
         "clientEmail": { "type": "string", "format": "email" },
         "clientPhone": { "type": "string" },
+        "country": { "type": "string" },
+        "city": { "type": "string" },
         "serviceType": { "type": "string" },
         "message": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "contacted", "completed", "cancelled"] },
         "createdAt": { "type": "string", "format": "date-time" },
-        "budget": { "type": "number" }
+        "budget": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "preferredLanguage": { "type": "string" }
       },
-      "required": ["clientName", "clientEmail", "serviceType", "message", "status", "createdAt"]
+      "required": ["firstName", "lastName", "clientEmail", "serviceType", "message", "status", "createdAt", "country", "paymentMethod"]
     },
     "UserProfile": {
       "title": "User Profile",

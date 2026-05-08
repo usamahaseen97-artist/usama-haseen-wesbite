@@ -3,9 +3,10 @@ import {
   Bot, Code, Database, Layout, Smartphone, Video, 
   Terminal, BarChart3, ShieldCheck, Mail, Phone, 
   ChevronRight, BrainCircuit, Sparkles, Globe,
-  Menu, X as CloseIcon
+  Menu, X as CloseIcon, Languages, MapPin, CreditCard, Bitcoin
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { db, handleFirestoreError } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -160,16 +161,31 @@ function FloatingRobot() {
 const categories = ['All', 'AI & Intel', 'Web & Apps', 'Design'];
 
 export default function Portfolio() {
+  const { t, i18n } = useTranslation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
+    phone: '',
+    country: '',
+    city: '',
     service: 'Full Website',
-    message: ''
+    message: '',
+    paymentMethod: 'card'
   });
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const languages = [
+    { code: 'en', label: 'English' },
+    { code: 'ur', label: 'اردو' },
+    { code: 'hi', label: 'हिन्दी' },
+    { code: 'ar', label: 'العربية' },
+    { code: 'pt', label: 'Português' },
+    { code: 'tr', label: 'Türkçe' }
+  ];
 
   const filteredServices = selectedCategory === 'All' 
     ? services 
@@ -180,15 +196,31 @@ export default function Portfolio() {
     setIsSubmitting(true);
     try {
       await addDoc(collection(db, 'orders'), {
-        clientName: formData.name,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         clientEmail: formData.email,
+        clientPhone: formData.phone,
+        country: formData.country,
+        city: formData.city,
         serviceType: formData.service,
         message: formData.message,
+        paymentMethod: formData.paymentMethod,
+        preferredLanguage: i18n.language,
         status: 'pending',
         createdAt: serverTimestamp(),
       });
       setSubmitted(true);
-      setFormData({ name: '', email: '', service: 'Full Website', message: '' });
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        country: '',
+        city: '',
+        service: 'Full Website',
+        message: '',
+        paymentMethod: 'card'
+      });
     } catch (error) {
       handleFirestoreError(error, 'write' as any, 'orders');
     } finally {
@@ -209,6 +241,23 @@ export default function Portfolio() {
           </button>
 
           <div className="flex-1 space-y-8 flex flex-col items-center">
+            <div className="relative group">
+              <button className="p-3 rounded-2xl glass hover:bg-brand-primary/20 transition-colors">
+                <Languages className="w-6 h-6 text-brand-primary" />
+              </button>
+              <div className="absolute left-full ml-4 top-0 glass rounded-2xl p-4 hidden group-hover:block blur-none min-w-32 z-[110]">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => i18n.changeLanguage(lang.code)}
+                    className={`block w-full text-left px-4 py-2 text-xs font-bold uppercase tracking-widest hover:text-brand-primary transition-colors ${i18n.language === lang.code ? 'text-brand-primary' : 'text-slate-400'}`}
+                  >
+                    {lang.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {[
               { icon: Globe, label: "Home", href: "#top" },
               { icon: Bot, label: "Services", href: "#services" },
@@ -248,28 +297,27 @@ export default function Portfolio() {
               <span className="w-2 h-2 rounded-full bg-brand-primary animate-pulse" />
               <span className="text-xs uppercase tracking-widest text-slate-400">Available for New Projects</span>
             </div>
-            <h1 className="text-5xl md:text-8xl font-black mb-6 leading-tight">
-              ENGINEERING <br />
+            <h1 className="text-5xl md:text-8xl font-black mb-6 leading-tight uppercase">
+              {t('hero_title').split(' ')[0]} <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-brand-secondary">
-                AI GENIUS
+                {t('hero_title').split(' ').slice(1).join(' ')}
               </span>
             </h1>
             <p className="text-lg md:text-xl text-slate-400 mb-10 max-w-2xl leading-relaxed">
-              I am Usama Haseen, an AI Engineer specializing in building full-stack solutions, 
-              autonomous agents, and mission-critical intelligence.
+              {t('hero_subtitle')}
             </p>
             <div className="flex flex-wrap justify-center lg:justify-start gap-4">
               <a 
                 href="#services" 
                 className="px-8 py-4 bg-brand-primary text-brand-dark font-bold rounded-full hover:scale-105 transition-transform"
               >
-                View Services
+                {t('view_services')}
               </a>
               <a 
                 href="#contact" 
                 className="px-8 py-4 glass text-white font-bold rounded-full hover:bg-white/10 transition-colors"
               >
-                Get in Touch
+                {t('get_in_touch')}
               </a>
             </div>
             <div className="mt-8">
@@ -303,8 +351,8 @@ export default function Portfolio() {
       <section id="services" className="py-32 px-6 md:ml-20">
         <div className="max-w-7xl mx-auto">
           <div className="mb-12 text-center">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">PREMIUM SERVICES</h2>
-            <p className="text-slate-400">High-quality solutions at industrial-disrupting prices.</p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 uppercase">{t('premium_services')}</h2>
+            <p className="text-slate-400">{t('services_desc')}</p>
           </div>
 
           {/* Filtering UI */}
@@ -411,8 +459,13 @@ export default function Portfolio() {
       {/* Contact Section */}
       <section id="contact" className="py-32 px-6 md:ml-20">
         <div className="max-w-3xl mx-auto text-center mb-16">
-          <h2 className="text-5xl font-bold mb-4 uppercase">Let's Build Something</h2>
-          <p className="text-slate-400 italic">I will respond to your inquiry within 24 hours.</p>
+          <h2 className="text-5xl font-bold mb-4 uppercase">{t('contact_title')}</h2>
+          <p className="text-slate-400 italic mb-6">{t('contact_desc')}</p>
+          <div className="glass p-4 rounded-2xl border-brand-primary/20 inline-block">
+            <p className="text-xs font-black text-brand-primary uppercase tracking-widest flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4" /> {t('order_policy')}
+            </p>
+          </div>
         </div>
         
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
@@ -420,7 +473,7 @@ export default function Portfolio() {
               <div className="glass p-6 rounded-3xl">
                 <Mail className="w-6 h-6 text-brand-primary mb-4" />
                 <p className="text-sm text-slate-500 uppercase tracking-widest mb-1">Email</p>
-                <p className="font-bold">usamavszoombies@gmail.com</p>
+                <p className="font-bold">usamahaseen97@gmail.com</p>
               </div>
               <div className="glass p-6 rounded-3xl">
                 <Phone className="w-6 h-6 text-brand-secondary mb-4" />
@@ -448,18 +501,32 @@ export default function Portfolio() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2 text-left">
-                      <label className="text-xs uppercase tracking-widest text-slate-400 ml-4">Full Name</label>
+                      <label className="text-xs uppercase tracking-widest text-slate-400 ml-4">{t('first_name')}</label>
                       <input 
                         required
                         type="text" 
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        value={formData.firstName}
+                        onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                         className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-colors"
-                        placeholder="John Doe"
+                        placeholder="Usama"
                       />
                     </div>
                     <div className="space-y-2 text-left">
-                      <label className="text-xs uppercase tracking-widest text-slate-400 ml-4">Email Address</label>
+                      <label className="text-xs uppercase tracking-widest text-slate-400 ml-4">{t('last_name')}</label>
+                      <input 
+                        required
+                        type="text" 
+                        value={formData.lastName}
+                        onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-colors"
+                        placeholder="Haseen"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2 text-left">
+                      <label className="text-xs uppercase tracking-widest text-slate-400 ml-4">{t('email')}</label>
                       <input 
                         required
                         type="email" 
@@ -469,9 +536,44 @@ export default function Portfolio() {
                         placeholder="john@example.com"
                       />
                     </div>
+                    <div className="space-y-2 text-left">
+                      <label className="text-xs uppercase tracking-widest text-slate-400 ml-4">{t('phone')}</label>
+                      <input 
+                        type="tel" 
+                        value={formData.phone}
+                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-colors"
+                        placeholder="+1 234 567 890"
+                      />
+                    </div>
                   </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2 text-left">
+                      <label className="text-xs uppercase tracking-widest text-slate-400 ml-4">{t('country')}</label>
+                      <input 
+                        required
+                        type="text" 
+                        value={formData.country}
+                        onChange={(e) => setFormData({...formData, country: e.target.value})}
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-colors"
+                        placeholder="United Arab Emirates"
+                      />
+                    </div>
+                    <div className="space-y-2 text-left">
+                      <label className="text-xs uppercase tracking-widest text-slate-400 ml-4">{t('city')}</label>
+                      <input 
+                        type="text" 
+                        value={formData.city}
+                        onChange={(e) => setFormData({...formData, city: e.target.value})}
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-colors"
+                        placeholder="Dubai"
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-2 text-left">
-                    <label className="text-xs uppercase tracking-widest text-slate-400 ml-4">Inquiry Category</label>
+                    <label className="text-xs uppercase tracking-widest text-slate-400 ml-4">{t('category')}</label>
                     <select 
                       value={formData.service}
                       onChange={(e) => setFormData({...formData, service: e.target.value})}
@@ -480,8 +582,34 @@ export default function Portfolio() {
                       {services.map(s => <option key={s.title} value={s.title} className="bg-slate-900 text-white">{s.title}</option>)}
                     </select>
                   </div>
+
+                  <div className="space-y-4 text-left">
+                    <label className="text-xs uppercase tracking-widest text-slate-400 ml-4">{t('payment_method')}</label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { id: 'card', label: t('payment_options.card'), icon: CreditCard },
+                        { id: 'bitcoin', label: t('payment_options.bitcoin'), icon: Bitcoin },
+                        { id: 'bank', label: t('payment_options.bank'), icon: Terminal }
+                      ].map((pm) => (
+                        <button
+                          key={pm.id}
+                          type="button"
+                          onClick={() => setFormData({...formData, paymentMethod: pm.id})}
+                          className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all ${
+                            formData.paymentMethod === pm.id 
+                              ? 'bg-brand-primary/20 border-brand-primary text-brand-primary' 
+                              : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
+                          }`}
+                        >
+                          <pm.icon className="w-6 h-6" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-center">{pm.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="space-y-2 text-left">
-                    <label className="text-xs uppercase tracking-widest text-slate-400 ml-4">Project Details</label>
+                    <label className="text-xs uppercase tracking-widest text-slate-400 ml-4">{t('message')}</label>
                     <textarea 
                       required
                       value={formData.message}
@@ -495,7 +623,7 @@ export default function Portfolio() {
                     disabled={isSubmitting}
                     className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary text-brand-dark font-black py-5 rounded-3xl hover:opacity-90 transition-opacity disabled:opacity-50"
                   >
-                    {isSubmitting ? 'PROCESSING...' : 'DISPATCH INQUIRY'}
+                    {isSubmitting ? t('processing') : t('submit')}
                   </button>
                 </form>
               )}

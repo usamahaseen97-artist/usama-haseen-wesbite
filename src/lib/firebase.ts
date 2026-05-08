@@ -47,11 +47,16 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 // Global Types
 export interface ServiceOrder {
   id?: string;
-  clientName: string;
+  firstName: string;
+  lastName: string;
   clientEmail: string;
   clientPhone?: string;
+  country: string;
+  city?: string;
   serviceType: string;
   message: string;
+  paymentMethod: string;
+  preferredLanguage?: string;
   status: 'pending' | 'contacted' | 'completed' | 'cancelled';
   createdAt: any;
   budget?: number;
